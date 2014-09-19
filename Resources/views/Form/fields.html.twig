@@ -343,14 +343,12 @@
                   var PupUploader = function (button, url, options) {
                      var fileInput = jQuery('<input data-url="' + url + '" type="file" accept="image/gif,image/jpg,image/jpeg,image/png" name="qqfile" style="position: absolute; right: 0px; top: 0px; font-family: Arial; font-size: 118px; margin: 0px; padding: 0px; cursor: pointer; opacity: 0;">');
                      jQuery(button).append(fileInput);
-                     
                      fileInput.css({
-                       top    : jQuery(button).position().top,
-                       left   : jQuery(button).position().left,
-                       width  : jQuery(button).outerWidth(),
-                       height : jQuery(button).outerHeight()
+                          top    : jQuery(button).position().top,
+                          left   : jQuery(button).position().left,
+                          width  : jQuery(button).outerWidth(),
+                          height : jQuery(button).outerHeight()
                      });
-
                      setTimeout(function () {
                          fileInput.css({
                              top    : jQuery(button).position().top,
@@ -359,6 +357,16 @@
                              height : jQuery(button).outerHeight()
                          });
                      }, 1000);
+                     jQuery(button).on('mouseenter', function () {
+                         fileInput.css({
+                             top    : jQuery(this).position().top,
+                             left   : jQuery(this).position().left,
+                             width  : jQuery(this).outerWidth(),
+                             height : jQuery(this).outerHeight()
+                         });
+                     });
+
+
 
                      jQuery(fileInput).fileupload({
                           dataType: 'json',
