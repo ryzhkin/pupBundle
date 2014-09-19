@@ -13,7 +13,6 @@
        "symfony/framework-bundle": "2.*"
     },
     "autoload": {
-        "psr-0": { "ryshkin\\pupBundle\\": "" }
-    },
-    "target-dir": "ryshkin/pupBundle"
+        "psr-4": { "ryshkin\\pupBundle\\": "" }
+    }
 }
