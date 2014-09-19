@@ -16,7 +16,7 @@
     </div>
 
     <div id="{{id_pup}}" class="">
-        <div class="reviews_item-photo" style="margin-bottom: 5px; padding: 5px; border: #C8C6C7 1px solid; height: {{pupOptions.height|round}}px; width: {{pupOptions.width|round}}px; text-align: center;">
+        <div class="reviews_item-photo" style="margin-bottom: 5px; padding: 5px; border: #C8C6C7 1px solid; height: {{pupOptions.height|round}}px; width: {{pupOptions.width|round}}px; text-align: center; overflow: hidden;">
             <img class="miniPhoto" style="cursor: pointer; height: {{(pupOptions.height|round - 12)}}px; width: auto;" alt="" src="{{ asset('bundles/pup/images/no_photo.jpg') }}">
             <div class="loading-progress" style="display: none; height: {{(pupOptions.height|round - 12)}}px; width: auto; text-align: center; vertical-align: middle; margin: auto;">
               Загрузка данных
@@ -343,12 +343,22 @@
                   var PupUploader = function (button, url, options) {
                      var fileInput = jQuery('<input data-url="' + url + '" type="file" accept="image/gif,image/jpg,image/jpeg,image/png" name="qqfile" style="position: absolute; right: 0px; top: 0px; font-family: Arial; font-size: 118px; margin: 0px; padding: 0px; cursor: pointer; opacity: 0;">');
                      jQuery(button).append(fileInput);
+                     
                      fileInput.css({
                        top    : jQuery(button).position().top,
                        left   : jQuery(button).position().left,
                        width  : jQuery(button).outerWidth(),
                        height : jQuery(button).outerHeight()
                      });
+
+                     setTimeout(function () {
+                         fileInput.css({
+                             top    : jQuery(button).position().top,
+                             left   : jQuery(button).position().left,
+                             width  : jQuery(button).outerWidth(),
+                             height : jQuery(button).outerHeight()
+                         });
+                     }, 1000);
 
                      jQuery(fileInput).fileupload({
                           dataType: 'json',
