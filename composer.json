@@ -1,0 +1,15 @@
+{
+    "name": "ryshkin/pup-bundle",
+    "description": "Simple photo uploader for Symfony 2.x",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Dmitry Ryzhkin",
+            "email": "ryshkin@gmail.com"
+        }
+    ],
+    "require": {
+       "php": ">=5.3.3",
+       "symfony/framework-bundle": "2.*"
+    }
+}

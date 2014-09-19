@@ -1,0 +1,535 @@
+{% block pup_widget %}
+  {% spaceless %}
+    <link href="{{ asset('bundles/pup/css/style.css') }}" rel="stylesheet" />
+
+    <link href="{{ asset('bundles/pup/vendors/jquery.Jcrop/css/jquery.Jcrop.min.css') }}" rel="stylesheet" />
+    <script type="text/javascript" src="{{ asset('bundles/pup/vendors/jquery.Jcrop/js/jquery.Jcrop.min.js') }}"></script>
+
+    <script src="{{ asset('bundles/pup/vendors/jQuery-File-Upload/js/jquery.iframe-transport.js') }}"></script>
+    <script src="{{ asset('bundles/pup/vendors/jQuery-File-Upload/js/jquery.fileupload.js') }}"></script>
+
+    {% set id_contener = id %}
+    {% set id_pup = "pup_" ~ id_contener %}
+
+    <div style="display: none;">
+      {{ form_widget(form) }}
+    </div>
+
+    <div id="{{id_pup}}" class="">
+        <div class="reviews_item-photo" style="margin-bottom: 5px; padding: 5px; border: #C8C6C7 1px solid; height: {{pupOptions.height|round}}px; width: {{pupOptions.width|round}}px; text-align: center;">
+            <img class="miniPhoto" style="cursor: pointer; height: {{(pupOptions.height|round - 12)}}px; width: auto;" alt="" src="{{ asset('bundles/pup/images/no_photo.jpg') }}">
+            <div class="loading-progress" style="display: none; height: {{(pupOptions.height|round - 12)}}px; width: auto; text-align: center; vertical-align: middle; margin: auto;">
+              Загрузка данных
+              <img src="{{ asset('bundles/pup/images/ajax-loader.gif') }}" style=""/>
+            </div>
+        </div>
+        <span class="uploadButton btn btn-primary btn-sm" title="Загрузить фото"  type="button">
+            <i class="icon-circle-arrow-up glyphicon glyphicon-cloud-upload"></i>
+        </span>
+        <span class="uploadURLButton btn btn-primary btn-sm" title="Указать URL фото" style="margin-left: 5px;" type="button">
+            <i class="icon-globe glyphicon glyphicon-link"></i>
+        </span>
+        <span class="editPhotoButton btn btn-primary btn-sm" title="Редактировать фото" style="margin-left: 5px;" type="button">
+            <i class="icon-pencil glyphicon glyphicon-pencil"></i>
+        </span>
+        <span class="emptyPhotoButton btn btn-primary btn-sm" title="Очистить фото" style="margin-left: 5px;" type="button">
+            <i class="icon-trash glyphicon glyphicon-trash"></i>
+        </span>
+    </div>
+    <img src="{{ asset('bundles/pup/images/ajax-loader.gif') }}" style="display: none;"/>
+    <img id="origPhoto" src="" style="display: none;"/>
+    <script type="text/javascript">
+       jQuery(document).ready(function () {
+                  var MsgDialog = function (options) {
+
+                      var options = jQuery().extend(true, {
+                          content                : 'Сообщение ....',
+                          closeOnBackgroundClick : false,
+                          editorWidth            : 800,
+                          editorHeight           : 500
+                      }, options);
+
+                      var showOptions = {};
+
+                      this.fadePanel = jQuery('<div>').css({
+                          display      : 'none',
+                          background   : '#000000',
+                          position     : 'fixed',
+                          left         : '0px',
+                          top          : '0px',
+                          width        : '100%',
+                          height       : '100%',
+                          opacity      : '0.6',
+                          zIndex       : '999999'
+                      });
+                      jQuery('body').append(this.fadePanel);
+                      if (options.closeOnBackgroundClick == true) {
+                          jQuery(this.fadePanel).on('click', function () {
+                              this.cancel();
+                          }.bind(this));
+                      }
+
+
+                      this.contentPanel = jQuery('<div>').css({
+                          display: 'none',
+                          padding: '10px',
+                          background: '#FFFFFF',
+                          /*minWidth:   '200px',
+                           minHeight: '100px',*/
+                          cssFloat: 'left',
+                          position: 'fixed',
+                          top: '50%',
+                          left: '50%',
+                          zIndex: '9999999',
+                          boxShadow: '0px 0px 20px #666'
+                      });
+                      jQuery('body').append(this.contentPanel);
+                      jQuery(this.contentPanel).html(options.content);
+
+
+
+                      this.cancel = function () {
+                          this.hide();
+                      }
+
+                      this.show = function (showOptions) {
+                          options = jQuery().extend(true, options, showOptions);
+                          jQuery(this.contentPanel).html(options.content);
+
+                          this.fadePanel.css('display', '');
+                          this.contentPanel.css('display', '');
+                          jQuery(this.contentPanel).css({
+                              'margin-top' : -((jQuery(this.contentPanel).height() + 10) / 2),
+                              'margin-left' : -((jQuery(this.contentPanel).width() + 10) / 2)
+                          });
+
+                          if (options.closeOnBackgroundClick == true) {
+                              jQuery(this.fadePanel).off('click');
+                              jQuery(this.fadePanel).on('click', function () {
+                                  this.cancel();
+                              }.bind(this));
+                          }
+
+
+                      }
+
+                      this.hide = function () {
+                          this.fadePanel.css('display', 'none');
+                          this.contentPanel.css('display', 'none');
+                      }
+                  }
+                  var dialog = new MsgDialog();
+
+                  var ImageUploadDialog = function (options) {
+
+                      var options = jQuery().extend(true, {
+                          aspect       : 1,      // Сотношение сторон вырезаемой области, 1- вырезать только квадрат, 0 - вырезать произвольную область
+                          uploadPath   : 'uploads',
+                          editorWidth  : 800,
+                          editorHeight : 500,
+                          srcRoute     : '',
+                          dstRoute     : 'uploads/'
+                      }, options);
+
+                      var showOptions = {};
+
+                      var jcrop_api = null;
+                      var srcImage = null;
+                      var imageWidth = 0;
+                      var imageHeight = 0;
+                      var fileName = '';
+
+                      this.fadePanel = jQuery('<div>').css({
+                          display      : 'none',
+                          background   : '#000000',
+                          position     : 'fixed',
+                          left         : '0px',
+                          top          : '0px',
+                          width        : '100%',
+                          height       : '100%',
+                          opacity      : '0.6',
+                          zIndex       : '9999'
+                      });
+                      jQuery('body').append(this.fadePanel);
+                      jQuery(this.fadePanel).on('click', function () {
+                          this.cancel();
+                      }.bind(this));
+
+                      this.contentPanel = jQuery('<div>').css({
+                          display: 'none',
+                          padding: '10px',
+                          background: '#FFFFFF',
+                          /*minWidth:   '200px',
+                           minHeight: '100px',*/
+                          cssFloat: 'left',
+                          position: 'fixed',
+                          top: '50%',
+                          left: '50%',
+                          zIndex: '99999',
+                          boxShadow: '0px 0px 20px #666'
+                      });
+                      jQuery('body').append(this.contentPanel);
+
+                      this.content = jQuery('<div>').css({
+                          width  : options.editorWidth + 'px',
+                          height : (options.editorHeight + 35) + 'px'
+                      });
+                      jQuery(this.contentPanel).append(this.content);
+
+                      this.imgArea = jQuery('<div>').css({
+                          //width   : '700px',
+                          width   : '100%',
+                          height  : options.editorHeight + 'px',
+                          border  : '#BCBABA solid 1px',
+                          //float   : 'left',
+                          display : 'inline-block',
+                          overflow: 'hidden'
+                      }).addClass('ryshkinImageUploadTransp');
+                      jQuery(this.content).append(this.imgArea);
+
+                      this.toolsPanel = jQuery('<div>').css({
+                          textAlign: 'right'
+                      });
+                      jQuery(this.content).append(this.toolsPanel);
+
+                      this.saveButton = jQuery('<span class="btn btn-primary btn-sm" type="button" style="margin-right: 5px;"><i class="icon-picture glyphicon glyphicon-ok"></i> Сохранить</span>').on('click', function () {
+                          if ((jcrop_api !== null) && (jcrop_api.tellSelect().h > 0) && (jcrop_api.tellSelect().w > 0)) {
+                              var selectRegion = jcrop_api.tellSelect();
+                              dialog.show({
+                                  content: '<img src="{{ asset('bundles/pup/images/ajax-loader.gif') }}" style=""/> Обработка изображения'
+                              });
+                              jQuery.post('/pup/image/upload/service', {
+                                  ajaxAction  : 'resize',
+                                  fileName    : fileName,
+                                  imageWidth  : imageWidth,
+                                  imageHeight : imageHeight,
+                                  x           : selectRegion.x,
+                                  y           : selectRegion.y,
+                                  width       : selectRegion.w,
+                                  height      : selectRegion.h,
+                                  srcRoute    : options.srcRoute,
+                                  dstRoute    : options.dstRoute,
+                                  noDelete    : options.noDelete
+                              }, function (result) {
+                                  dialog.hide();
+                                  result = jQuery.parseJSON(result);
+                                  //console.log(result);
+                                  if (result.ok) {
+                                      if (typeof(showOptions.onSuccess) == 'function') {
+                                          showOptions.onSuccess(result);
+                                      }
+                                      this.hide();
+                                  } else {
+                                      if (typeof(result.msg) == 'string') {
+                                        alert(result.msg);
+                                      } else {
+                                        alert('Ошибка во время обработки изображения.');
+                                      }
+                                  }
+                              }.bind(this)).error(function () {
+                                alert('Server error.');
+                              });
+                          } else {
+                              alert('Ошибка. Не выбран фрагмент изображения.');
+                          }
+                      }.bind(this));
+                      jQuery(this.toolsPanel).append(this.saveButton);
+
+                      this.closeButton = jQuery('<span class="btn btn-primary btn-sm" type="button" style=""><i class="icon-remove-circle glyphicon glyphicon-remove"></i> Отменить</span>').on('click', function () {
+                          this.cancel();
+                      }.bind(this));
+                      jQuery(this.toolsPanel).append(this.closeButton);
+
+                      this.cancel = function () {
+                          if (options.noDelete !== true) {
+                              jQuery.post('/pup/image/upload/service', {
+                                  ajaxAction  : 'delete',
+                                  fileName    : options.dstRoute + fileName
+                              },function (result) {
+                                  result = jQuery.parseJSON(result);
+                              });
+                          }
+                          this.hide();
+                      }
+
+                      this.show = function (showOpt) {
+                          showOptions = showOpt;
+                          this.fadePanel.css('display', '');
+                          this.contentPanel.css('display', '');
+                          jQuery(this.contentPanel).css({
+                              'margin-top' : -((jQuery(this.contentPanel).height() + 10) / 2),
+                              'margin-left' : -((jQuery(this.contentPanel).width() + 10) / 2)
+                          });
+
+
+                          if ((typeof(showOptions) !== 'undefined') && (typeof(showOptions.url) !== 'undefined')) {
+                              this.image = jQuery('<img>');
+                              jQuery(this.imgArea).append(this.image);
+                              jQuery(this.image).on('load', function () {
+                                  //console.log('image loaded > ' + showOptions.url);
+                                  if ((jQuery(this).width() > options.editorWidth) && (jQuery(this).height() > options.editorHeight)) {
+                                      if (jQuery(this).width() > jQuery(this).height()) {
+                                          jQuery(this).width(options.editorWidth);
+                                      } else {
+                                          jQuery(this).height(options.editorHeight);
+                                      }
+                                  } else {
+                                      if (jQuery(this).width() > options.editorWidth) {
+                                          jQuery(this).width(options.editorWidth);
+                                      }
+                                      if (jQuery(this).height() > options.editorHeight) {
+                                          jQuery(this).height(options.editorHeight);
+                                      }
+                                  }
+                                  imageWidth = jQuery(this).width();
+                                  imageHeight = jQuery(this).height();
+                                  jQuery(this).Jcrop({
+                                      aspectRatio: options.aspect, //1.5,//(options.square)?1:1.5,
+                                      minSize: [100, 100],
+                                      setSelect:   [ 0, 0, imageWidth, imageHeight]
+                                  }, function () {
+                                      jcrop_api = this;
+                                      this.animateTo([(imageWidth - 100) / 2, (imageHeight - 100) / 2, ((imageWidth - 100) / 2) + 100, ((imageHeight - 100) / 2) + 100]);
+                                  });
+                              });
+                              jQuery(this.image).attr('src', '/' + showOptions.url);
+                              fileName = showOptions.url.split('/');
+                              if (fileName.length > 0) {
+                                  fileName = fileName[fileName.length - 1];
+                              } else {
+                                  fileName = '';
+                              }
+                              //console.log(fileName);
+                          }
+
+
+
+                      }
+
+                      this.hide = function () {
+                          this.fadePanel.css('display', 'none');
+                          this.contentPanel.css('display', 'none');
+                      }
+                  }
+
+                  var loadOrigPhoto = function (origPhoto) {
+                      {% if pupOptions.srcRoute != '' %}
+                      origPhoto = origPhoto.split('/');
+                      origPhoto = origPhoto[origPhoto.length - 1];
+                      origPhoto = '/{{ pupOptions.srcRoute }}' + origPhoto;
+                      jQuery('#origPhoto').attr('src', origPhoto);
+                      {% endif %}
+                  }
+
+                  var uploadImage = jQuery('#{{id_pup}}');
+                  var uploadButton = jQuery(uploadImage).find('.uploadButton');
+                  var noPhoto = '{{ asset('bundles/pup/images/no_photo.jpg') }}';
+                  var uploadPhoto = '{{ asset('bundles/pup/images/ajax-loader.gif') }}';
+
+                  if (jQuery('#{{id_contener}}').val() == '') {
+                      jQuery(uploadImage).find('.reviews_item-photo > img').attr('src', noPhoto);
+                  } else {
+                      jQuery(uploadImage).find('.reviews_item-photo > img').attr('src', '/{{ pupOptions.dstRoute }}' + jQuery('#{{id_contener}}').val());
+                      loadOrigPhoto(jQuery('#{{id_contener}}').val());
+                  }
+
+                  var afterProcessed = function (img) {
+                      jQuery('#{{id_contener}}').val(img.fileName);
+                      jQuery(uploadImage).find('.reviews_item-photo > img').attr('src', '/' + img.dstRoute + img.fileName + '?rnd=' + Math.random());
+                      loadOrigPhoto(img.fileName);
+                  }
+
+                  var ajax_url = '/pup/image/upload/service';
+                  var PupUploader = function (button, url, options) {
+                     var fileInput = jQuery('<input data-url="' + url + '" type="file" accept="image/gif,image/jpg,image/jpeg,image/png" name="qqfile" style="position: absolute; right: 0px; top: 0px; font-family: Arial; font-size: 118px; margin: 0px; padding: 0px; cursor: pointer; opacity: 0;">');
+                     jQuery(button).append(fileInput);
+                     fileInput.css({
+                       top    : jQuery(button).position().top,
+                       left   : jQuery(button).position().left,
+                       width  : jQuery(button).outerWidth(),
+                       height : jQuery(button).outerHeight()
+                     });
+
+                     jQuery(fileInput).fileupload({
+                          dataType: 'json',
+                          formData: typeof(options.params) == 'object'?options.params:{},
+                          add: function (e, data) {
+                             data.submit();
+                          },
+                          start: function (e, data) {
+                            if (typeof(options.onStart) == 'function') {
+                               options.onStart();
+                            }
+                          },
+                          done: function (e, data) {
+                            if (typeof(options.onOk) == 'function') {
+                              options.onOk(data.result);
+                            }
+                          },
+                          fail: function (e, data) {
+                            if (typeof(options.onError) == 'function') {
+                              options.onError();
+                            }
+                          }
+                      });
+                  }
+
+
+                  var uploader = new PupUploader(
+                    jQuery(uploadButton)[0],
+                    ajax_url, {
+                      params: {
+                        ajaxAction : 'upload',
+                        dstRoute   : '{{pupOptions.dstRoute}}'
+                      },
+                      onStart: function () {
+                        jQuery('#{{id_pup}}').find('.miniPhoto').hide();
+                        jQuery('#{{id_pup}}').find('.loading-progress').css('display','table-cell');
+                        // dialog.show({
+                        //  content: '<img src="{{ asset('bundles/pup/images/ajax-loader.gif') }}" style=""/> Загрузка данных'
+                        // });
+                      },
+                      onOk: function (res) {
+                        // dialog.hide();
+                        jQuery('#{{id_pup}}').find('.miniPhoto').show();
+                        jQuery('#{{id_pup}}').find('.loading-progress').hide();
+                        console.log(res);
+                        if (res.ok) {
+                          var di = new ImageUploadDialog({
+                            aspect     : {{pupOptions.aspect}},
+                            srcRoute   : '{{pupOptions.srcRoute}}',
+                           dstRoute    : '{{pupOptions.dstRoute}}'
+                          });
+                          di.show({
+                          url: res.url,
+                            onSuccess: afterProcessed
+                          });
+                        } else {
+                          jQuery(uploadImage).find('.reviews_item-photo > img').attr('src', noPhoto);
+                          console.log('upload photo error');
+                          if (typeof(res.msg) == 'string') {
+                            alert(res.msg);
+                          }
+                        }
+                      },
+                      onError: function () {
+                        // dialog.hide();
+                        jQuery('#{{id_pup}}').find('.miniPhoto').show();
+                        jQuery('#{{id_pup}}').find('.loading-progress').hide();
+                        console.log('Upload error');
+                      }
+                    }
+                  );//*/
+
+                  jQuery(uploadImage).find('.emptyPhotoButton').on('click', function () {
+                      if (jQuery('#{{id_contener}}').val() !== '') {
+                          /*jQuery.post('/ryshkin/image/upload/service', {
+                           ajaxAction  : 'delete',
+                           fileName    : jQuery('#{{id_contener}}').val()
+                           },function (result) {
+                           result = jQuery.parseJSON(result);
+                           });*/
+                          jQuery('#{{id_contener}}').val('');
+                          jQuery(uploadImage).find('.reviews_item-photo > img').attr('src', noPhoto);
+                      }
+                  });
+
+                  jQuery(uploadImage).find('.miniPhoto').on('click', function () {
+                      var photo = jQuery('#{{id_contener}}').val();
+                      if (photo !== '') {
+                          photo = photo.split('/');
+                          photo = photo[photo.length - 1];
+                          {% if pupOptions.srcRoute != '' %}
+                          photo = '{{ pupOptions.srcRoute }}' + photo;
+                          {% else %}
+                          photo = '{{ pupOptions.dstRoute }}' + photo;
+                          {% endif %}
+                          dialog.show({
+                              content: '<img src="/' + photo + '" style="max-width: ' + jQuery(window).width()*0.9 + 'px; max-height: ' + jQuery(window).height()*0.9 + 'px;"/>',
+                              closeOnBackgroundClick : true
+                          });
+                      }
+                  });
+
+                  jQuery(uploadImage).find('.uploadURLButton').on('click', function () {
+                      var url = prompt('Укажите URL фото');
+                      if (url !== null) {
+                          var urlCheck = '(?:(?:ht|f)tps?://)?(?:[\\-\\w]+:[\\-\\w]+@)?(?:[0-9a-z][\\-0-9a-z]*[0-9a-z]\\.)+[a-z]{2,6}(?::\\d{1,5})?(?:[?/\\\\#][?!^$.(){}:|=[\\]+\\-/\\\\*;&~#@,%\\wА-Яа-я]*)?';
+                          if ((url !== '') && (new RegExp('^' + urlCheck + '$', 'i')).test(url)) {
+                              dialog.show({
+                                  content: '<img src="{{ asset('bundles/pup/images/ajax-loader.gif') }}" style=""/> Загрузка данных'
+                              });
+                              jQuery.post('/pup/image/upload/service', {
+                                  ajaxAction  : 'uploadURL',
+                                  dstRoute    : '{{pupOptions.dstRoute}}',
+                                  url         :  url
+                              },function (result) {
+                                  result = jQuery.parseJSON(result);
+                                  console.log(result);
+                                  dialog.hide();
+                                  if (result.ok) {
+
+                                      var di = new ImageUploadDialog({
+                                          aspect     : {{ pupOptions.aspect  }},
+                                          srcRoute   : '{{pupOptions.srcRoute}}',
+                                          dstRoute   : '{{pupOptions.dstRoute}}'
+                                      });
+                                      di.show({
+                                          url: result.url,
+                                          onSuccess: afterProcessed
+                                      });
+
+                                  } else {
+                                      jQuery(uploadImage).find('.reviews_item-photo > img').attr('src', noPhoto);
+                                      console.log('upload photo error');
+                                  }
+
+                              }).error(function () {
+                                  dialog.hide();
+                                  alert('Произошла ошибка загрузки изображения с "' + url + '".' + "\n" + 'Попробуйте другой URL пожайлуста.');
+                              });
+                          } else {
+                              alert('Укажите корректный URL.');
+                          }
+                      }
+                  });
+
+                  jQuery(uploadImage).find('.editPhotoButton').on('click', function () {
+                      if (jQuery('#{{id_contener}}').val() !== '') {
+
+                          //console.log(jQuery('#{{id_contener}}').val());
+                          var photo = jQuery('#{{id_contener}}').val();
+                          photo = photo.split('/');
+                          photo = photo[photo.length - 1];
+                          {% if pupOptions.srcRoute != '' %}
+                          photo = '{{ pupOptions.srcRoute }}' + photo;
+                          {% else %}
+                          photo = '{{ pupOptions.dstRoute }}' + photo;
+                          {% endif %}
+
+                          var di = new ImageUploadDialog({
+                              aspect     : {{ pupOptions.aspect  }},
+                              srcRoute   : '{{pupOptions.srcRoute}}',
+                              dstRoute   : '{{pupOptions.dstRoute}}',
+                              noDelete   : true
+                          });
+                          di.show({
+                              url: photo,
+                              onSuccess: afterProcessed
+                          });
+
+
+                          //jQuery(uploadImage).find('.reviews_item-photo > img').attr('src', noPhoto);
+                      }
+                  });
+
+
+
+
+
+              });
+    </script>
+
+
+  {% endspaceless %}
+{% endblock %}

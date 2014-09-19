@@ -1,0 +1,10 @@
+services:
+ form.type.imageUpload:
+      class: ryshkin\pupBundle\Form\Type\ImageUploadType
+      tags:
+        - { name: form.type, alias: pup }
+
+ ryshkin_pup.dynamicRouter.listener:
+         class: ryshkin\pupBundle\EventListener\DynamicRouterListener
+         tags:
+             - { name: kernel.event_listener, event: kernel.request, priority: 33 }
