@@ -6,7 +6,7 @@
     <script type="text/javascript" src="{{ asset('bundles/pup/vendors/jquery.Jcrop/js/jquery.Jcrop.min.js') }}"></script>
 
     <script src="{{ asset('bundles/pup/vendors/jQuery-File-Upload/js/jquery.iframe-transport.js') }}"></script>
-    <script src="{{ asset('bundles/pup/vendors/jQuery-File-Upload/js/jquery.fileupload.js') }}"></script>
+{#    <script src="{{ asset('bundles/pup/vendors/jQuery-File-Upload/js/jquery.fileupload.js') }}"></script>#}
 
     {% set id_contener = id %}
     {% set id_pup = "pup_" ~ id_contener %}
@@ -341,7 +341,7 @@
 
                   var ajax_url = '/pup/image/upload/service';
                   var PupUploader = function (button, url, options) {
-                     var fileInput = jQuery('<input data-url="' + url + '" type="file" accept="image/gif,image/jpg,image/jpeg,image/png" name="qqfile" style="position: absolute; right: 0px; top: 0px; font-family: Arial; font-size: 118px; margin: 0px; padding: 0px; cursor: pointer; opacity: 0;">');
+                     var fileInput = jQuery('<input id="{{id_pup}}_input_file" data-url="' + url + '" type="file" accept="image/gif,image/jpg,image/jpeg,image/png" name="qqfile" style="position: absolute; right: 0px; top: 0px; font-family: Arial; font-size: 118px; margin: 0px; padding: 0px; cursor: pointer; opacity: 0;">');
                      jQuery(button).append(fileInput);
                      fileInput.css({
                           top    : jQuery(button).position().top,
@@ -358,7 +358,7 @@
                          });
                      }, 1000);
                      jQuery(button).on('mouseenter', function () {
-                         fileInput.css({
+                         jQuery('#{{id_pup}}_input_file').css({
                              top    : jQuery(this).position().top,
                              left   : jQuery(this).position().left,
                              width  : jQuery(this).outerWidth(),
@@ -366,30 +366,63 @@
                          });
                      });
 
+                     jQuery(button).on('click', function () {
 
 
-                     jQuery(fileInput).fileupload({
-                          dataType: 'json',
-                          formData: typeof(options.params) == 'object'?options.params:{},
-                          add: function (e, data) {
-                             data.submit();
-                          },
-                          start: function (e, data) {
-                            if (typeof(options.onStart) == 'function') {
-                               options.onStart();
-                            }
-                          },
-                          done: function (e, data) {
-                            if (typeof(options.onOk) == 'function') {
-                              options.onOk(data.result);
-                            }
-                          },
-                          fail: function (e, data) {
-                            if (typeof(options.onError) == 'function') {
-                              options.onError();
-                            }
-                          }
-                      });
+                     if (typeof(jQuery().fileupload) == 'undefined') {
+                         jQuery.getScript('{{ asset('bundles/pup/vendors/jQuery-File-Upload/js/jquery.fileupload.js') }}', function () {
+                             console.info('Loading jquery.fileupload.js');
+                             jQuery('#{{id_pup}}_input_file').fileupload({
+                                 dataType: 'json',
+                                 formData: typeof(options.params) == 'object'?options.params:{},
+                                 add: function (e, data) {
+                                     data.submit();
+                                 },
+                                 start: function (e, data) {
+                                     if (typeof(options.onStart) == 'function') {
+                                         options.onStart();
+                                     }
+                                 },
+                                 done: function (e, data) {
+                                     if (typeof(options.onOk) == 'function') {
+                                         options.onOk(data.result);
+                                     }
+                                 },
+                                 fail: function (e, data) {
+                                     if (typeof(options.onError) == 'function') {
+                                         options.onError();
+                                     }
+                                 }
+                             });
+                         });
+                     } else {
+                         jQuery('#{{id_pup}}_input_file').fileupload({
+                             dataType: 'json',
+                             formData: typeof(options.params) == 'object'?options.params:{},
+                             add: function (e, data) {
+                                 data.submit();
+                             },
+                             start: function (e, data) {
+                                 if (typeof(options.onStart) == 'function') {
+                                     options.onStart();
+                                 }
+                             },
+                             done: function (e, data) {
+                                 if (typeof(options.onOk) == 'function') {
+                                     options.onOk(data.result);
+                                 }
+                             },
+                             fail: function (e, data) {
+                                 if (typeof(options.onError) == 'function') {
+                                     options.onError();
+                                 }
+                             }
+                         });
+                     }
+                     });
+
+
+
                   }
 
 
@@ -401,6 +434,7 @@
                         dstRoute   : '{{pupOptions.dstRoute}}'
                       },
                       onStart: function () {
+
                         jQuery('#{{id_pup}}').find('.miniPhoto').hide();
                         jQuery('#{{id_pup}}').find('.loading-progress').css('display','table-cell');
                         // dialog.show({
